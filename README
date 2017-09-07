@@ -1,0 +1,6 @@
+Matrix w terminalu.
+
+Sposób użycia:
+
+gcc matrix.c -o matrix
+./matrix

@@ -6,8 +6,6 @@
 #include <sys/select.h>
 #include <sys/time.h>
 #include <sys/types.h>
-#include <unistd.h>
-#include <fcntl.h>
 #include <termios.h>
 
 
@@ -20,9 +18,9 @@
 int height;
 int width;
 
+char *array; // 2D array, access: i*width + j
+int *speed;
 
-// 2D array, access: i*width + j
-char *array;
 
 
 void goto_xy(int x, int y) {
@@ -74,31 +72,45 @@ void read_terminal_size() {
 
 
 
-void init_arr() {
-	for(int i = 0; i < width; i++)
-		for(int j = 0; j < height; j++)
+void init() {
+	for(int i = 0; i < height; i++)
+		for(int j = 0; j < width; j++)
 			array[i*width + j] = rand()%2 ? 33 + rand() % 93 : ' ';
+	
+	for(int i = 0; i < width; i++) {
+		int rand_int = rand() % 8;
+		if(rand_int < 3) {
+			speed[i] = 1;
+		} else if(rand_int == 7) {
+			speed[i] = 3;
+		} else {
+			speed[i] = 2;
+		}
+	}
 }
 
 
 
-void print_arr() {
-	for(int i = 0; i < width; i++)
-		for(int j = 0; j < height; j++) {
-			goto_xy(i+1, j+1);
-			putchar(array[i*width +j]);
+void print() {
+	for(int i = 0; i < height; i++)
+		for(int j = 0; j < width; j++) {
+			goto_xy(j+1, i+1);
+			putchar(array[i*width + j]);
 		}
 }
 
 
 
-void shift_arr() {
-	for(int i = 0; i < width; i++)
-		for(int j = 0; j < height - 1; j++)
-			 array[i*width + j] = array[i*width + (j+1)];
+void shift() {
+	for(int i = 0; i < height; i++)
+		for(int j = 0; j < width; j++)
+			if(i + speed[j] < height)
+				array[i*width + j] = array[(i+speed[j])*width + j];
+			else
+				array[i*width + j] = rand()%2 ? 33 + rand() % 93 : ' ';
 	
-	for(int i = 0; i < width; i++)
-		array[i*width + height - 1] = rand()%2 ? 33 + rand() % 93 : ' ';
+	for(int j = 0; j < width; j++)
+		array[(height - 1)*width + j] = rand()%2 ? 33 + rand() % 92 : ' ';
 }
 
 
@@ -110,19 +122,20 @@ int main() {
 	read_terminal_size();
 	
 	array = malloc(sizeof(char)*height*width);
+	speed = malloc(sizeof(int)*width);
 	
-	if(!array)
+	if(!array || !speed)
 		return 1;
 	
-	init_arr();
+	init();
 	
 	// green text
 	printf("\e[32m");
 	
 	while(1) {
-		print_arr();
+		print();
 		usleep(50 * 1000);
-		shift_arr();
+		shift();
 	}
 	
 }
